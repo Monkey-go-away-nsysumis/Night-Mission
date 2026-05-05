@@ -1167,11 +1167,11 @@
             loginAttempts++;
             triggerJumpscare();
 
+            document.getElementById('login-error').textContent = `INVALID CREDENTIALS. ATTEMPT ${loginAttempts}/3`;
+
             if (loginAttempts >= 3) {
                 lockoutEndTime = Date.now() + (30 * 1000); // 30 seconds
                 checkLockout();
-            } else {
-                document.getElementById('login-error').textContent = `INVALID CREDENTIALS. ATTEMPT ${loginAttempts}/3`;
             }
             document.getElementById('login-password').value = '';
         }
@@ -1394,11 +1394,11 @@
                 decryptAttempts++;
                 triggerJumpscare();
 
+                document.getElementById('modal-error').textContent = `ACCESS DENIED. INCORRECT KEY. ATTEMPT ${decryptAttempts}/3`;
+
                 if (decryptAttempts >= 3) {
                     decryptLockoutEndTime = Date.now() + (30 * 1000); // 30 seconds
                     checkDecryptLockout();
-                } else {
-                    document.getElementById('modal-error').textContent = `ACCESS DENIED. INCORRECT KEY. ATTEMPT ${decryptAttempts}/3`;
                 }
                 document.getElementById('modal-password').value = '';
             }

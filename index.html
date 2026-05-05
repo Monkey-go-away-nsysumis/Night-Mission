@@ -1040,6 +1040,8 @@
         let currentUser = null;
         let loginAttempts = 0;
         let lockoutEndTime = 0;
+        let decryptAttempts = 0;
+        let decryptLockoutEndTime = 0;
 
         // Elements
         const elJumpscare = document.getElementById('jumpscare-container');
@@ -1072,6 +1074,24 @@
                 document.getElementById('login-btn').disabled = false;
                 document.getElementById('lockout-timer').classList.add('hidden');
                 document.getElementById('login-error').textContent = '';
+                return false;
+            }
+            return false;
+        }
+
+        function checkDecryptLockout() {
+            if (Date.now() < decryptLockoutEndTime) {
+                const remain = Math.ceil((decryptLockoutEndTime - Date.now()) / 1000);
+                document.getElementById('modal-password').disabled = true;
+                document.getElementById('modal-error').textContent = `SYSTEM LOCKED. COOLDOWN: ${remain}s`;
+                setTimeout(checkDecryptLockout, 1000);
+                return true;
+            } else if (decryptLockoutEndTime > 0) {
+                // Lockout expired
+                decryptLockoutEndTime = 0;
+                decryptAttempts = 0;
+                document.getElementById('modal-password').disabled = false;
+                document.getElementById('modal-error').textContent = '';
                 return false;
             }
             return false;
@@ -1148,7 +1168,7 @@
             triggerJumpscare();
 
             if (loginAttempts >= 3) {
-                lockoutEndTime = Date.now() + (180 * 1000); // 180 seconds
+                lockoutEndTime = Date.now() + (30 * 1000); // 30 seconds
                 checkLockout();
             } else {
                 document.getElementById('login-error').textContent = `INVALID CREDENTIALS. ATTEMPT ${loginAttempts}/3`;
@@ -1282,6 +1302,7 @@
             if (document.getElementById('global-matrix-bg')) {
                 document.getElementById('global-matrix-bg').classList.add('hidden');
             }
+            checkDecryptLockout();
         }
 
         function showSystemUpdateNotification() {
@@ -1311,9 +1332,12 @@
         }
 
         function attemptDecrypt() {
+            if (checkDecryptLockout()) return;
+
             const pass = document.getElementById('modal-password').value;
             if (pass === SECRETS.TRUTH_MODAL_PASS) {
                 // Success revealing truth
+                decryptAttempts = 0;
                 document.getElementById('decryption-step').classList.add('hidden');
                 document.getElementById('truth-step').classList.remove('hidden');
 
@@ -1367,8 +1391,15 @@
 
             } else {
                 // Error - Jumpscare inside modal context
-                document.getElementById('modal-error').textContent = 'ACCESS DENIED. INCORRECT KEY.';
+                decryptAttempts++;
                 triggerJumpscare();
+
+                if (decryptAttempts >= 3) {
+                    decryptLockoutEndTime = Date.now() + (30 * 1000); // 30 seconds
+                    checkDecryptLockout();
+                } else {
+                    document.getElementById('modal-error').textContent = `ACCESS DENIED. INCORRECT KEY. ATTEMPT ${decryptAttempts}/3`;
+                }
                 document.getElementById('modal-password').value = '';
             }
         }

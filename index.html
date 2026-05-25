@@ -284,11 +284,14 @@
                 <input type="text" id="login-username" placeholder="ACCOUNT"
                     class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-4 py-2 rounded focus:outline-none focus:border-sky-500 transition-colors uppercase placeholder-slate-600">
             </div>
-            <div class="w-full mb-6">
+            <div class="w-full mb-6 relative">
                 <input type="password" id="login-password" placeholder="PASSWORD"
                     class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-4 py-2 rounded focus:outline-none focus:border-sky-500 transition-colors placeholder-slate-600">
+                <button id="login-eye-btn" class="absolute right-3 top-1/2 transform -translate-y-1/2 focus:outline-none text-slate-400 hover:text-slate-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                </button>
             </div>
-            <p id="login-error" class="text-red-500 text-xs mb-4 h-4"></p>
+            <p id="login-error" class="text-red-500 text-xs mb-4 min-h-[16px] text-center w-full"></p>
             <button id="login-btn" onclick="attemptLogin()"
                 class="w-full glass-btn text-sky-400 font-bold py-2 rounded tracking-widest hover:text-white">LOGIN</button>
             <p id="lockout-timer" class="text-red-500 text-sm mt-4 hidden font-mono text-center"></p>
@@ -529,7 +532,7 @@
 
                     <!-- Version History Button -->
                     <button onclick="openVersionModal()"
-                        class="absolute bottom-4 right-4 text-sm opacity-20 grayscale brightness-50 hover:opacity-100 hover:grayscale-0 hover:brightness-100 transition-all bg-transparent border-none cursor-pointer">
+                        class="absolute bottom-4 right-4 text-2xl opacity-80 hover:opacity-100 hover:scale-110 transition-all bg-transparent border-none cursor-pointer">
                         💡
                     </button>
                 </section>
@@ -795,11 +798,16 @@
 
                 <div class="mb-4">
                     <label class="block text-xs text-slate-400 mb-2 uppercase tracking-widest">最高權限解密密碼</label>
-                    <input type="password" id="modal-password"
-                        class="w-full bg-black border border-rose-900 text-rose-500 px-4 py-3 rounded focus:outline-none focus:border-rose-500 font-mono tracking-[0.5em] text-center"
-                        autocomplete="off">
+                    <div class="relative w-full">
+                        <input type="password" id="modal-password"
+                            class="w-full bg-black border border-rose-900 text-rose-500 px-4 py-3 rounded focus:outline-none focus:border-rose-500 font-mono tracking-[0.5em] text-center"
+                            autocomplete="off">
+                        <button id="modal-eye-btn" class="absolute right-3 top-1/2 transform -translate-y-1/2 focus:outline-none text-rose-500 hover:text-rose-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </button>
+                    </div>
                 </div>
-                <p id="modal-error" class="text-rose-500 text-xs mb-4 h-4 text-center font-mono"></p>
+                <p id="modal-error" class="text-rose-500 text-xs mb-4 min-h-[16px] text-center font-mono"></p>
 
                 <div class="flex gap-4">
                     <button onclick="closeVersionModal()"
@@ -1167,7 +1175,7 @@
             loginAttempts++;
             triggerJumpscare();
 
-            document.getElementById('login-error').textContent = `INVALID CREDENTIALS. ATTEMPT ${loginAttempts}/3`;
+            document.getElementById('login-error').innerHTML = `INVALID CREDENTIALS.<br>ATTEMPT ${loginAttempts}/3<br>(提示: 注意英文大小寫)`;
 
             if (loginAttempts >= 3) {
                 lockoutEndTime = Date.now() + (30 * 1000); // 30 seconds
@@ -1180,7 +1188,8 @@
             if (checkLockout()) return;
 
             const user = document.getElementById('login-username').value.trim().toLowerCase();
-            const pass = document.getElementById('login-password').value;
+            const passEl = document.getElementById('login-password');
+            const pass = passEl.dataset.realValue !== undefined ? passEl.dataset.realValue : passEl.value;
 
             if (ACCOUNTS[user] && ACCOUNTS[user].strPass === pass) {
                 // Success
@@ -1334,7 +1343,8 @@
         function attemptDecrypt() {
             if (checkDecryptLockout()) return;
 
-            const pass = document.getElementById('modal-password').value;
+            const passEl = document.getElementById('modal-password');
+            const pass = passEl.dataset.realValue !== undefined ? passEl.dataset.realValue : passEl.value;
             if (pass === SECRETS.TRUTH_MODAL_PASS) {
                 // Success revealing truth
                 decryptAttempts = 0;
@@ -1414,6 +1424,78 @@
         document.getElementById('modal-password').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') attemptDecrypt();
         });
+
+        function setupPasswordField(inputId, btnId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            let timeoutId = null;
+            let isEyeOpen = false;
+            let realValue = "";
+
+            const SVG_EYE_OPEN = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>`;
+            const SVG_EYE_CLOSED = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>`;
+
+            input.type = 'text';
+            btn.innerHTML = SVG_EYE_CLOSED;
+
+            setInterval(() => {
+                if (input.value === "") {
+                    realValue = "";
+                    input.dataset.realValue = "";
+                }
+            }, 100);
+
+            input.addEventListener('input', (e) => {
+                if (isEyeOpen) {
+                    realValue = input.value;
+                    input.dataset.realValue = realValue;
+                    return;
+                }
+
+                if (input.value === "") {
+                    realValue = "";
+                    input.dataset.realValue = "";
+                    return;
+                }
+
+                const currentVal = input.value;
+                const lastChar = currentVal.slice(-1);
+                
+                if (currentVal.length < realValue.length) {
+                    realValue = realValue.slice(0, currentVal.length);
+                } else if (currentVal.length > realValue.length) {
+                    realValue += currentVal.slice(realValue.length);
+                } else {
+                    if (lastChar !== '•') {
+                        realValue = realValue.slice(0, -1) + lastChar;
+                    }
+                }
+                
+                input.dataset.realValue = realValue;
+
+                input.value = "•".repeat(realValue.length - 1) + realValue.slice(-1);
+                
+                if (timeoutId) clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    if (!isEyeOpen) {
+                        input.value = "•".repeat(realValue.length);
+                    }
+                }, 1000);
+            });
+
+            btn.addEventListener('click', () => {
+                isEyeOpen = !isEyeOpen;
+                btn.innerHTML = isEyeOpen ? SVG_EYE_OPEN : SVG_EYE_CLOSED;
+                if (isEyeOpen) {
+                    input.value = realValue;
+                } else {
+                    input.value = "•".repeat(realValue.length);
+                }
+            });
+        }
+
+        setupPasswordField('login-password', 'login-eye-btn');
+        setupPasswordField('modal-password', 'modal-eye-btn');
 
     </script>
 </body>
